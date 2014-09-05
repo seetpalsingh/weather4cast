@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Todo</title>
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <link href="css/ionic.css" rel="stylesheet">
+    <script src="angular.min.js"></script>
+	
+	<style>
+		#weather4cast{
+			background: url(weather.jpg) center center no-repeat scroll;
+			background-size: cover;
+			position: absolute;
+			height: 100%; width:100%;
+		}
+		[ng-controller="MainCtrl"] {
+			border-image-slice: initial;
+			border: 1px solid #00D6FF;
+			background: rgba(0, 153, 255, 0.33);
+			border-image-source: initial;
+			border-image-width: initial;
+			border-image-outset: initial;
+			border-image-repeat: initial;
+			position: absolute;
+			bottom: 10px;
+			left: 10px;
+			right: 10px;
+			padding: 20px;
+			color: #FFF;
+			font-family: arial;
+			letter-spacing: 1px;
+			font-size: 13px;
+		}
+		span{ float:right; }
+		body{ padding:0; margin:0; }
+	</style>
+	
+  </head>
+	<body>
+		
+		<div id='weather4cast' ng-app="MyApp">
+			<div ng-controller="MainCtrl">
+			  <div ng-show="position"> 
+				<p>sunrise	=	<span>{{ app_data.sunrise }}</span></p>
+				<p>sunset	=	<span>{{ app_data.sunset }}</span></p>
+				<p>location	=	<span>{{ app_data.location}}</span></p>
+				<p>weather	=	<span>{{ app_data.weather }}</span></p>
+				<p>tem max	=	<span>{{ app_data.max_temp }} C</span></p>
+				<p>tem min	=	<span>{{ app_data.min_temp }} C</span></p>
+			  </div>
+			  <div ng-hide="position">
+				<p>{{ message }}</p>
+			  </div>
+			</div>
+		</div>
+	</body>
+	
+	
+    <script >
+	
+	var app = angular.module("MyApp", []);
+	app.factory("GeolocationService", ['$q', '$window', '$rootScope', function ($q, $window, $rootScope) {
+		return function () {
+			var deferred = $q.defer();
+			if (!$window.navigator) {
+				$rootScope.$apply(function() {
+					deferred.reject(new Error("Geolocation is not supported"));
+				});
+			} else {
+				$window.navigator.geolocation.getCurrentPosition(function (position) {
+					$rootScope.$apply(function() {
+						deferred.resolve(position);
+					});
+				}, function (error) {
+					$rootScope.$apply(function() {
+						deferred.reject(error);
+					});
+				});
+			}
+			return deferred.promise;
+		}
+	}]);
+	app.controller('MainCtrl', ['$scope', '$http', 'GeolocationService', function ($scope, $http, geolocation) {
+		$scope.app_data = [];
+		$scope.message = "Determining gelocation...";
+		geolocation().then(function (position, app_data) { 
+			
+			$scope.position = position;
+			
+			$http.get("http://api.openweathermap.org/data/2.5/weather?lat="+ position.coords.latitude +"&lon=" + position.coords.longitude).success(function(data){
+				$scope.data = data;
+				$scope.app_data.sunrise 	= timeUTC(data.sys.sunrise);
+				$scope.app_data.sunset 		= timeUTC(data.sys.sunset);
+				$scope.app_data.weather 	= data.weather[0].description;
+				$scope.app_data.location 	= data.name;
+				$scope.app_data.min_temp 	= toCel(data.main.temp_min);
+				$scope.app_data.max_temp 	= toCel(data.main.temp_max);
+				
+			})
+		}, function (reason) {
+			$scope.message = "Could not be determined. " + reason.message + "";
+		});
+	}]);
+	
+	
+	function timeUTC(utc){
+		var d = new Date(utc *1000);
+		var n = d.toLocaleTimeString();
+		return n;
+	}
+	function toCel(fer){
+		var C	=	(fer-273.15);
+		var C	=	parseInt(C);
+		return C;
+	}
+	
+	</script>
+    
+    <script ng-controller="varriabl" >
+		 
+		
+		
+    </script>
+    
+</html>
